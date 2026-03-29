@@ -670,12 +670,29 @@ let filteredPosts = [];
 let currentFilter = 'all';
 let dragSrcIndex = null;
 
-const PROXY = 'https://gentle-meadow-29de.jade-batista.workers.dev/';
+const WORKER = 'https://gentle-meadow-29de.jade-batista.workers.dev/';
 
-async function fetchWithProxy(url, opts) {
-  const proxyUrl = PROXY + '?url=' + encodeURIComponent(url);
-  const res = await fetch(proxyUrl, opts);
-  if (!res.ok) throw new Error('Erro ao conectar ao Notion via proxy.');
+async function fetchWithProxy(notionUrl, opts) {
+  // Handle CORS preflight
+  const proxyUrl = WORKER + '?url=' + encodeURIComponent(notionUrl);
+  
+  const fetchOpts = {
+    method: opts.method || 'GET',
+    headers: {
+      'Authorization': opts.headers['Authorization'],
+      'Notion-Version': '2022-06-28',
+      'Content-Type': 'application/json',
+    },
+    mode: 'cors',
+  };
+  
+  if (opts.body) fetchOpts.body = opts.body;
+  
+  const res = await fetch(proxyUrl, fetchOpts);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error('Erro ' + res.status + ': ' + text);
+  }
   return res;
 }
 
