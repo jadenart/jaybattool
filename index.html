@@ -806,10 +806,7 @@ async function fetchPosts(silent=false) {
   let cursor = undefined;
 
   do {
-    const body = {
-      page_size: 100,
-      sorts: [{ property: cfg.orderProp, direction: 'ascending' }]
-    };
+    const body = { page_size: 100 };
     if (cursor) body.start_cursor = cursor;
 
     const data = await notionRequest('/databases/' + cfg.dbId + '/query', 'POST', body);
@@ -818,6 +815,14 @@ async function fetchPosts(silent=false) {
   } while (cursor);
 
   allPosts = allResults.map((p, i) => parsePost(p, i));
+  // Sort by Grid Order if available, otherwise by date
+  allPosts.sort((a, b) => {
+    if (a.order != null && b.order != null) return a.order - b.order;
+    if (a.order != null) return -1;
+    if (b.order != null) return 1;
+    if (a.date && b.date) return new Date(a.date) - new Date(b.date);
+    return 0;
+  });
   return allPosts;
 }
 
